@@ -63,8 +63,11 @@ mkdir -p "$OUT"
 MODULE_OUT="$OUT/module"
 
 cp -a "$MODULE_SRC/." "$MODULE_OUT/"
-mkdir -p "$MODULE_OUT/system/system_ext/priv-app/OpenEUICC"
-install -m 0644 "$PRIV_APK" "$MODULE_OUT/system/system_ext/priv-app/OpenEUICC/OpenEUICC.apk"
+rm -f "$MODULE_OUT/system/priv-app/OpenEUICC/.gitkeep"
+mkdir -p "$MODULE_OUT/system/priv-app/OpenEUICC"
+install -m 0644 "$PRIV_APK" "$MODULE_OUT/system/priv-app/OpenEUICC/OpenEUICC.apk"
+install -m 0644 "$SRC/privapp_whitelist_im.angry.openeuicc.xml" \
+    "$MODULE_OUT/system/etc/permissions/privapp_whitelist_im.angry.openeuicc.xml"
 install -m 0644 "$SRC/privapp_whitelist_im.angry.openeuicc.xml" \
     "$MODULE_OUT/system/system_ext/etc/permissions/privapp_whitelist_im.angry.openeuicc.xml"
 chmod 0755 "$MODULE_OUT/service.sh" "$MODULE_OUT/uninstall.sh"

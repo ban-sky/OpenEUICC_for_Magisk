@@ -47,6 +47,21 @@ open class OpenEuiccApplication : Application() {
             "Installed as system app: " +
                 ((applicationInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0)
         )
+        EuiccDiagnostics.record("APK path: " + applicationInfo.sourceDir)
+        EuiccDiagnostics.record(
+            "System flags: FLAG_SYSTEM=" +
+                ((applicationInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0) +
+                ", FLAG_UPDATED_SYSTEM_APP=" +
+                ((applicationInfo.flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0)
+        )
+        for (path in arrayOf(
+            "/system/priv-app/OpenEUICC/OpenEUICC.apk",
+            "/system_ext/priv-app/OpenEUICC/OpenEUICC.apk",
+        )) {
+            EuiccDiagnostics.record(
+                "File " + path + ": " + (if (java.io.File(path).exists()) "present" else "missing")
+            )
+        }
         for (permission in arrayOf(
             "android.permission.READ_PRIVILEGED_PHONE_STATE",
             "android.permission.MODIFY_PHONE_STATE",

@@ -21,5 +21,5 @@
     <string name="pref_advanced_telephony_manager_removable_desc">在預設情況下，可移除 eSIM 將僅使用 OMAPI。這與非特權模式 (EasyEUICC) 一致。在某些裝置上 OMAPI 可能有問題 — 選擇此選項以強制使用 TelephonyManager。</string>
 
     <string name="not_privileged_title">OpenEUICC 未以系統應用身分執行</string>
-    <string name="not_privileged_message">OpenEUICC 目前以一般應用身分執行，而不是特權系統應用，因此無法存取 eUICC。\n\n這通常表示 Magisk / KernelSU 模組沒有被掛載。在 Android 16 上，某些 KernelSU / mountify 掛載模式會出現這個問題。\n\n解決方式：\n1. 重新開機一到兩次。\n2. 若無效，嘗試更換掛載模式，或安裝 mountify 等掛載輔助模組。\n3. 重新開機後確認 /system_ext/priv-app/OpenEUICC/OpenEUICC.apk 是否存在。\n\n應用程式以系統應用身分執行後，重新開啟即可。</string>
+    <string name="not_privileged_message">OpenEUICC 目前以一般應用身分執行，而不是特權系統應用，因此無法存取 eUICC。\n\n這通常表示 Magisk / KernelSU 模組沒有被掛載。若之前裝過本模組的舊版本（或 hzy132 的模組），它的 /data/app 副本也會遮蔽系統應用。\n\n解決方式：\n1. 重新開機一次。新版本會在建開機時自動清理殘留的 /data/app 副本。\n2. 若仍無效，開啟「診斷資訊」（右上角選單），查看 \"File /system/priv-app/...\" 兩行。若顯示 missing，表示模組沒有掛載：更換掛載模式，或安裝 mountify 等掛載輔助模組。\n3. 開機日誌在 /data/local/tmp/openeuicc-boot.log。\n\n應用程式以系統應用身分執行後，重新開啟即可。</string>
 </resources>

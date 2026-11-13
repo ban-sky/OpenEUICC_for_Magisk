@@ -155,7 +155,7 @@ jobs:
         run: |
           set -euxo pipefail
           BT="$ANDROID_HOME/build-tools/37.0.0"
-          APK="$PWD/out/module/system/system_ext/priv-app/OpenEUICC/OpenEUICC.apk"
+          APK="$PWD/out/module/system/priv-app/OpenEUICC/OpenEUICC.apk"
 
           "$BT/apksigner" verify --print-certs "$APK"
           "$BT/apksigner" verify out/EasyEUICC-*.apk
@@ -222,7 +222,7 @@ jobs:
           2. Reboot.
           3. Open OpenEUICC.
 
-          If the app still says it is not privileged, your root manager did not mount the module: check that `/system_ext/priv-app/OpenEUICC/OpenEUICC.apk` exists, and if not, change the mount mode (e.g. install mountify) and reboot.
+          If the app still says it is not privileged, your root manager did not mount the module: check that `/system/priv-app/OpenEUICC/OpenEUICC.apk` exists, and if not, change the mount mode (e.g. install mountify) and reboot.
           EOF
           )"
           if gh release view "$TAG" > /dev/null 2>&1; then

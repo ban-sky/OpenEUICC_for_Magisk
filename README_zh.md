@@ -10,7 +10,8 @@ eSIM LPA 实现）打包成 Magisk / KernelSU / APatch 模块，并修复了安�
 只做了少量针对性修改。
 
 * **OpenEUICC**（`im.angry.openeuicc`）——特权版，作为系统应用安装在
-  `/system_ext/priv-app/OpenEUICC/`。
+  `/system/priv-app/OpenEUICC/`（旧版本放在 `/system_ext`，KernelSU 的部分挂载实现不会覆盖
+  该分区，因此改为 `/system`）。
 * **EasyEUICC**（`im.angry.easyeuicc`）——非特权版，普通用户应用，作为独立 APK 附带在 release 里。
 
 ## 闪退的原因
@@ -35,8 +36,9 @@ OpenEUICC 是**特权应用**，它会调用 `TelephonyManager.uiccCardsInfo`，
 `READ_PRIVILEGED_PHONE_STATE` 签名权限。只有"以系统应用身份安装 + 出现在 privapp 权限白名单里"
 才能拿到这个权限。
 
-在安卓 16（以及新版 KernelSU / Magisk 的某些挂载模式）下，模块经常在包管理器扫描
-`/system_ext` 时还没有被挂载，特权 APK 根本不可见；与此同时，旧版模块安装时还会执行
+在安卓 16（以及新版 KernelSU / Magisk 的某些挂载模式）下，模块经常在包管理器扫描时还没有
+被挂载，特权 APK 根本不可见（旧版本放在 `/system_ext`，很多 KernelSU 挂载实现压根不覆盖这个
+分区，所以现在改放 `/system/priv-app`）；与此同时，旧版模块安装时还会执行
 `pm install`，又往 `/data/app` 装了一份**同包名的非特权副本**。这份副本会盖住系统应用，
 于是应用以普通用户身份启动，而 `PrivilegedOpenEuiccApplication.onCreate()` 里没有做任何保护的
 `uiccCardsInfo` 调用直接抛出 `SecurityException`，进程在第一个界面出现前就被杀掉。
@@ -48,8 +50,8 @@ OpenEUICC 是**特权应用**，它会调用 `TelephonyManager.uiccCardsInfo`，
 | `openeuicc/app/src/main/java/im/angry/openeuicc/util/PrivilegedTelephonyCompat.kt` | `uiccCardsInfoCompat` 捕获 `SecurityException`，返回空列表，不再抛出。 |
 | `openeuicc/app/src/main/java/im/angry/openeuicc/PrivilegedOpenEuiccApplication.kt` | 非特权启动时跳过特权清理逻辑，并且不让异常逃出 `onCreate()`。 |
 | `openeuicc/app/src/main/java/im/angry/openeuicc/ui/PrivilegedMainActivity.kt` | 没有 `READ_PRIVILEGED_PHONE_STATE` 时弹出说明对话框（重启、修好模块挂载），而不是崩溃。 |
-| `magisk-module/customize.sh` | 不再执行 `pm install`（它正是非特权"影子副本"的来源）；顺带清掉旧版本留下的 `/data/app` 副本。 |
-| `magisk-module/service.sh` | 开机完成后再授予 `READ_PHONE_STATE` / `POST_NOTIFICATIONS`，而不是在安装阶段。 |
+| `magisk-module/customize.sh` | 不再执行 `pm install`（它正是非特权"影子副本"的来源）；APK 改放 `/system/priv-app`；顺带清掉旧版本留下的 `/data/app` 副本。 |
+| `magisk-module/service.sh` | 开机后自愈：发现系统 APK 已挂载但当前运行的仍是 `/data/app` 副本时，自动卸载该副本让系统应用生效；随后授予 `READ_PHONE_STATE` / `POST_NOTIFICATIONS`，并写开机日志 `/data/local/tmp/openeuicc-boot.log`。 |
 | `magisk-module/system/system_ext/etc/default-permissions/openeuicc.xml` | 首次开机自动授予运行时权限，作为第二重保险。 |
 | `openeuicc/app-common/.../core/EuiccDiagnostics.kt` 等 | 记录卡/端口/权限/通道打开失败原因，并在主菜单与"未检测到 eUICC"页面提供诊断对话框。 |
 | `openeuicc/buildSrc/.../Versioning.kt` + `build.sh` | 显式指定递增的 `versionCode`（内置源码没有上游 git 历史，算出来的版本号会远小于已发布的 `802`，反而会让系统继续保留旧的 `/data/app` 版本）。 |
@@ -70,11 +72,25 @@ OpenEUICC 是**特权应用**，它会调用 `TelephonyManager.uiccCardsInfo`，
 如果应用提示"不是特权应用"，说明模块没有被挂载。用 root shell 检查：
 
 ```sh
-ls -l /system_ext/priv-app/OpenEUICC/OpenEUICC.apk
+ls -l /system/priv-app/OpenEUICC/OpenEUICC.apk
+cat /data/local/tmp/openeuicc-boot.log
 ```
 
 文件不存在的话，换一种挂载方式（KernelSU Next 可以试不同的挂载模式，或者刷 `mountify` 模块），
 然后重启。部分机型上"重新刷一遍模块 + 重启两次"也有效。
+
+### KernelSU 注意事项
+
+* 本模块把 APK 放在 `/system/priv-app`，这是所有 KernelSU 挂载实现（overlayfs、magic mount、
+  mountify、meta-overlayfs）都会覆盖的分区；`/system_ext` 在部分实现里不会被挂载。
+* KernelSU 管理器里不要把 OpenEUICC 加入"卸载模块"（umount）名单，否则该应用的挂载会被隐藏，
+  应用就会退回普通应用身份。
+* 从旧模块（hzy132 的版本，或本模块 3.806/3.809）升级时，旧版 `pm install` 会在 `/data/app`
+  留一份副本。新版 `customize.sh` 会尽量删除它，删不掉时 `service.sh` 会在开机后重试——
+  升级后请重启一次，再打开应用。
+* 开机日志 `/data/local/tmp/openeuicc-boot.log` 里会记录：模块目录、系统 APK 是否为
+  `present`、`pm path` 指向哪里、自愈是否执行。诊断信息里也有对应的 `APK path`、
+  `System flags`、`File /system/priv-app/...` 等行。
 
 ## 看不到 eSIM / 无法查看 eSIM 信息
 
@@ -84,7 +100,8 @@ ls -l /system_ext/priv-app/OpenEUICC/OpenEUICC.apk
 * "未检测到 eUICC" 页面的 **显示诊断信息** 按钮。
 
 对话框里会列出系统报告的每张 UICC 卡、每个端口（是否 eUICC、是否可移除、是否支持 MEP）、
-每个权限的授予状态，以及打开逻辑通道失败的具体异常。点 **复制** 就能把整段内容贴到 issue 里。
+每个权限的授予状态、应用实际运行的 APK 路径与系统标志、`/system/priv-app` 与 `/system_ext`
+下 APK 是否存在，以及打开逻辑通道失败的具体异常。点 **复制** 就能把整段内容贴到 issue 里。
 
 根据这些信息，常见原因分三类：
 

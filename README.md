@@ -11,7 +11,8 @@ and builds the vendored upstream source at commit `9a537a25163c5159899260fb6191a
 (the same commit that release `3(802)` was built from) with a small, focused patch.
 
 * **OpenEUICC** (`im.angry.openeuicc`) — the privileged build, installed as a system app in
-  `/system_ext/priv-app/OpenEUICC/`.
+  `/system/priv-app/OpenEUICC/` (older releases used `/system_ext`, which some KernelSU mount
+  implementations do not overlay).
 * **EasyEUICC** (`im.angry.easyeuicc`) — the unprivileged build, a normal user app, attached to
   each release as a separate APK.
 
@@ -38,7 +39,8 @@ OpenEUICC is a *privileged* app: it calls `TelephonyManager.uiccCardsInfo`, whic
 installed as a system app **and** listed in a `privapp-permissions` whitelist.
 
 On Android 16 (and with newer KernelSU / Magisk mount modes) the module often is not mounted at
-the time the package manager scans `/system_ext`, so the privileged APK is not visible. In
+the time the package manager scans `/system` (older releases shipped the APK under `/system_ext`,
+which many KernelSU mount implementations never overlay), so the privileged APK is not visible. In
 addition, the module used to run `pm install` during installation, which created a second,
 unprivileged copy of the same package in `/data/app`. That copy takes precedence over the system
 app, so the app ran as an ordinary user app, and `PrivilegedOpenEuiccApplication.onCreate()` —
@@ -76,12 +78,27 @@ If the app reports that it is not privileged, the module was not mounted. Check 
 shell:
 
 ```sh
-ls -l /system_ext/priv-app/OpenEUICC/OpenEUICC.apk
+ls -l /system/priv-app/OpenEUICC/OpenEUICC.apk
+cat /data/local/tmp/openeuicc-boot.log
 ```
 
 If the file is missing, change the way your root manager mounts modules (for KernelSU Next,
 different mount modes or the `mountify` module are known to help) and reboot. Re-flashing the
 module and rebooting twice also helps on some devices.
+
+### KernelSU notes
+
+* The APK now lives in `/system/priv-app`, the one partition every KernelSU mount implementation
+  (overlayfs, magic mount, mountify, meta-overlayfs) overlays. `/system_ext` is not covered by all
+  of them.
+* Do not add OpenEUICC to KernelSU's per-app "umount modules" list — that hides this module's
+  mount from the app and it falls back to an unprivileged identity.
+* When upgrading from the old module (hzy132's, or this module's 3.806/3.809), the previous
+  `pm install` may have left a copy in `/data/app`. `customize.sh` removes it when it can, and
+  `service.sh` retries on boot — reboot once after upgrading, then open the app.
+* `/data/local/tmp/openeuicc-boot.log` records the module directory, whether the system APK is
+  present, what `pm path` points at, and whether the self-heal ran. The diagnostics dialog shows
+  the matching `APK path`, `System flags` and `File /system/priv-app/...` lines.
 
 ## "No eUICC detected" / cannot see eSIM information
 
@@ -92,8 +109,9 @@ first:
 * the **Show diagnostics** button on the "no eUICC" screen.
 
 The dialog lists every UICC card and port reported by the system (is it an eUICC, is it
-removable, does it support MEP), the state of each relevant permission, and the exact exception
-that prevented a logical channel from being opened. **Copy** puts the whole dump on the
+removable, does it support MEP), the state of each relevant permission, the APK the app actually
+runs from together with its system flags, whether the APK exists under `/system/priv-app` and
+`/system_ext`, and the exact exception that prevented a logical channel from being opened. **Copy** puts the whole dump on the
 clipboard so it can be pasted into an issue.
 
 The usual causes fall into three groups:
