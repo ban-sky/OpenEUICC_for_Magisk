@@ -100,7 +100,8 @@ OPENEUICC_VERSION_NAME=3 OPENEUICC_VERSION_CODE=803 ./build.sh
 
 产物在 `out/`：
 
-* `OpenEUICC-Magisk_module-<版本>.zip` —— 带版本号的模块
+* `OpenEUICC-Magisk_module-<版本>.zip` —— 带版本号的模块（文件名里的版本形如 `3.806`，
+  `module.prop` 里显示为同一构建的 `3(806)`）
 * `OpenEUICC-Magisk_module.zip` —— 同一文件的固定名字，供 `update.json` 使用
 * `EasyEUICC-<版本>.apk` —— 非特权版本
 * `update.json` —— Magisk 更新信息

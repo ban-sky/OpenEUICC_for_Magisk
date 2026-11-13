@@ -107,7 +107,8 @@ OPENEUICC_VERSION_NAME=3 OPENEUICC_VERSION_CODE=803 ./build.sh
 
 The output is written to `out/`:
 
-* `OpenEUICC-Magisk_module-<version>.zip` — versioned module
+* `OpenEUICC-Magisk_module-<version>.zip` — versioned module (`<version>` is e.g. `3.806`, while
+  `module.prop` shows the same build as `3(806)`)
 * `OpenEUICC-Magisk_module.zip` — same file under a stable name, used by `update.json`
 * `EasyEUICC-<version>.apk` — unprivileged build
 * `update.json` — Magisk update metadata
