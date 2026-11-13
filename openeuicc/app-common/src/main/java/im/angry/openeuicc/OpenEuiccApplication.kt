@@ -1,6 +1,8 @@
 package im.angry.openeuicc
 
 import android.app.Application
+import android.content.ComponentName
+import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.os.Build
@@ -58,6 +60,35 @@ open class OpenEuiccApplication : Application() {
                     } else {
                         "denied"
                     }
+            )
+        }
+        try {
+            val intent = Intent("android.service.euicc.EuiccService")
+            val flags = PackageManager.MATCH_SYSTEM_ONLY or PackageManager.GET_RESOLVED_FILTER
+            val services = packageManager.queryIntentServices(intent, flags)
+            EuiccDiagnostics.record("EuiccService implementations: " + services.size)
+            services.sortedByDescending { it.filter?.priority ?: 0 }
+                .forEachIndexed { index, resolveInfo ->
+                    val priority = resolveInfo.filter?.priority ?: 0
+                    val pkg = resolveInfo.serviceInfo?.packageName ?: "?"
+                    val marker = if (pkg == packageName) " (this app)" else ""
+                    EuiccDiagnostics.record(
+                        "  #" + (index + 1) + " " + pkg + ": priority=" + priority + marker
+                    )
+                }
+            val component = ComponentName(
+                packageName,
+                "im.angry.openeuicc.service.OpenEuiccService"
+            )
+            val state = packageManager.getComponentEnabledSetting(component)
+            EuiccDiagnostics.record(
+                "Our EuiccService component state: " + state +
+                    " (0=default, 1=enabled, 2=disabled)"
+            )
+        } catch (e: Exception) {
+            EuiccDiagnostics.record(
+                "Cannot query EuiccService implementations: " +
+                    e.javaClass.simpleName + ": " + e.message
             )
         }
     }
