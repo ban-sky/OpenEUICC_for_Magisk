@@ -1,8 +1,15 @@
 package im.angry.openeuicc.util
 
-import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+
+/**
+ * READ_PRIVILEGED_PHONE_STATE is a platform-only permission constant, so it is
+ * not part of the public android.Manifest.permission API that we compile
+ * against. Its value is stable and part of the platform permission namespace.
+ */
+private const val PERMISSION_READ_PRIVILEGED_PHONE_STATE =
+    "android.permission.READ_PRIVILEGED_PHONE_STATE"
 
 /**
  * Whether this process is running as the privileged system app that the
@@ -14,5 +21,5 @@ import android.content.pm.PackageManager
  * privileged telephony call throws SecurityException from Application.onCreate().
  */
 fun Context.isRunningAsPrivilegedSystemApp(): Boolean =
-    checkSelfPermission(Manifest.permission.READ_PRIVILEGED_PHONE_STATE) ==
+    checkSelfPermission(PERMISSION_READ_PRIVILEGED_PHONE_STATE) ==
             PackageManager.PERMISSION_GRANTED

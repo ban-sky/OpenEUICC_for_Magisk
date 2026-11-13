@@ -23,12 +23,12 @@ set_perm "$MODPATH/uninstall.sh" 0 0 0755
 # Remove an unprivileged copy installed by an older release of this module. It
 # would otherwise keep shadowing the system app even after this module is
 # mounted successfully.
-apk_path="$(pm path im.angry.openeuicc 2>/dev/null | head -n 1)"
+apk_path="$(pm path im.angry.openeuicc 2>/dev/null | head -n 1 || true)"
 apk_path="${apk_path#package:}"
 case "$apk_path" in
   /data/app/*)
     ui_print "- Removing outdated unprivileged copy: $apk_path"
-    pm uninstall im.angry.openeuicc >/dev/null 2>&1
+    pm uninstall im.angry.openeuicc >/dev/null 2>&1 || true
     ;;
 esac
 
