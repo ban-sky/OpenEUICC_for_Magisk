@@ -29,24 +29,36 @@ elif [ -f /system_ext/priv-app/OpenEUICC/OpenEUICC.apk ]; then
   SYSTEM_APK=/system_ext/priv-app/OpenEUICC/OpenEUICC.apk
 fi
 
+APK_PATH="$(pm path im.angry.openeuicc 2>/dev/null | head -n 1 || true)"
+APK_PATH="${APK_PATH#package:}"
+
 {
   echo "== openeuicc $(date) =="
   echo "module dir: $MODDIR"
   echo "system apk: ${SYSTEM_APK:-missing}"
-  echo "pm path: $(pm path im.angry.openeuicc 2>&1 | tr '\n' ' ')"
+  echo "pm path: ${APK_PATH:-none}"
 } > "$LOG" 2>&1
 
-APK_PATH="$(pm path im.angry.openeuicc 2>/dev/null | head -n 1 || true)"
-APK_PATH="${APK_PATH#package:}"
 case "$APK_PATH" in
   /data/app/*)
     if [ -n "$SYSTEM_APK" ]; then
-      echo "removing unprivileged copy: $APK_PATH" >> "$LOG"
-      pm uninstall im.angry.openeuicc >> "$LOG" 2>&1
-      # Bring the system copy back for the current user if the uninstall
-      # removed it entirely (it should not, but this is harmless when it did).
-      pm install-existing --user 0 im.angry.openeuicc >> "$LOG" 2>&1
-      echo "pm path after heal: $(pm path im.angry.openeuicc 2>&1 | tr '\n' ' ')" >> "$LOG"
+      # The package manager may still be settling right after boot, so retry.
+      attempt=0
+      while [ "$attempt" -lt 3 ]; do
+        attempt=$((attempt + 1))
+        echo "removing unprivileged copy (attempt $attempt): $APK_PATH" >> "$LOG"
+        pm uninstall im.angry.openeuicc >> "$LOG" 2>&1
+        # Bring the system copy back if the uninstall removed the package
+        # entirely (it should not: only the /data/app update is removed).
+        pm install-existing --user 0 im.angry.openeuicc >> "$LOG" 2>&1
+        APK_PATH="$(pm path im.angry.openeuicc 2>/dev/null | head -n 1 || true)"
+        APK_PATH="${APK_PATH#package:}"
+        echo "pm path after heal: ${APK_PATH:-none}" >> "$LOG"
+        case "$APK_PATH" in
+          /data/app/*) sleep 10 ;;
+          *) break ;;
+        esac
+      done
     else
       echo "system apk not mounted; leaving data copy alone" >> "$LOG"
     fi
