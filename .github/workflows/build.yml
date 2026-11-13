@@ -1,0 +1,209 @@
+name: Build Magisk module
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: "Version name (shown in module.prop, e.g. 3)"
+        required: false
+        default: "3"
+      version_code:
+        description: "Version code (leave empty to derive from the commit count)"
+        required: false
+        default: ""
+      create_release:
+        description: "Create / update a GitHub release with the built module"
+        type: boolean
+        default: true
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "LICENSE"
+      - ".gitignore"
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      ANDROID_SDK: ${{ runner.temp }}/android-sdk
+      SIGNING_DIR: ${{ runner.temp }}/openeuicc-signing
+      KEYSTORE_PASSWORD: openeuicc-module-2026
+      KEYSTORE_ALIAS: openeuicc
+      INPUT_VERSION_NAME: ${{ inputs.version_name }}
+      INPUT_VERSION_CODE: ${{ inputs.version_code }}
+      INPUT_CREATE_RELEASE: ${{ inputs.create_release }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Restore Gradle caches
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            ~/.android
+          key: gradle-${{ runner.os }}-${{ hashFiles('openeuicc/gradle/wrapper/gradle-wrapper.properties', 'openeuicc/settings.gradle.kts', 'openeuicc/build.gradle.kts') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      # The signing key is generated once and then reused from the Actions
+      # cache, so that consecutive builds are signed with the same key and can
+      # update each other in place. If the cache is ever evicted, either restore
+      # it or add a KEYSTORE_BASE64 secret (see README) to make the key
+      # permanent; otherwise installed copies have to be uninstalled once.
+      - name: Restore signing keystore
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.SIGNING_DIR }}
+          key: openeuicc-signing-v1
+
+      - name: Install Android SDK
+        run: |
+          set -euxo pipefail
+          SDK="$ANDROID_SDK"
+          mkdir -p "$SDK/cmdline-tools"
+          curl -fsSL -o /tmp/cmdline-tools.zip \
+            https://dl.google.com/android/repository/commandlinetools-linux-16111833_latest.zip
+          unzip -q /tmp/cmdline-tools.zip -d "$SDK/cmdline-tools"
+          mv "$SDK/cmdline-tools/cmdline-tools" "$SDK/cmdline-tools/latest"
+
+          yes | "$SDK/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SDK" --licenses > /dev/null || true
+          "$SDK/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SDK" --install \
+            "platform-tools" \
+            "platforms;android-37.0" \
+            "build-tools;37.0.0" \
+            "ndk;26.1.10909125"
+
+          # compileSdk = 37 makes AGP look for platforms/android-37, while the
+          # SDK names the first 37 platform "android-37.0".
+          ln -sfn "$SDK/platforms/android-37.0" "$SDK/platforms/android-37"
+
+          echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$SDK" >> "$GITHUB_ENV"
+          "$SDK/platform-tools/adb" --version || true
+
+      - name: Prepare signing keystore
+        run: |
+          set -euxo pipefail
+          mkdir -p "$SIGNING_DIR"
+          KS="$SIGNING_DIR/openeuicc.p12"
+
+          if [ -n "${KEYSTORE_BASE64:-}" ]; then
+            echo "Using the keystore from the KEYSTORE_BASE64 secret"
+            printf '%s' "$KEYSTORE_BASE64" | base64 -d > "$KS"
+          elif [ ! -f "$KS" ]; then
+            echo "Generating a new signing keystore (cached for later builds)"
+            keytool -genkeypair \
+              -keystore "$KS" \
+              -storetype PKCS12 \
+              -alias "$KEYSTORE_ALIAS" \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10950 \
+              -dname "CN=OpenEUICC Magisk Module, OU=ban-sky, O=OpenEUICC for Magisk, C=CN" \
+              -storepass "$KEYSTORE_PASSWORD" \
+              -keypass "$KEYSTORE_PASSWORD"
+          else
+            echo "Reusing the cached signing keystore"
+          fi
+
+          cat > openeuicc/keystore.properties <<EOF
+          storeFile=$KS
+          storePassword=$KEYSTORE_PASSWORD
+          keyAlias=$KEYSTORE_ALIAS
+          keyPassword=$KEYSTORE_PASSWORD
+          unprivKeyAlias=$KEYSTORE_ALIAS
+          unprivKeyPassword=$KEYSTORE_PASSWORD
+          EOF
+          cat openeuicc/keystore.properties
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+
+      - name: Build
+        run: |
+          set -euo pipefail
+          export OPENEUICC_VERSION_NAME="${INPUT_VERSION_NAME:-3}"
+          export OPENEUICC_VERSION_CODE="${INPUT_VERSION_CODE:-}"
+          bash build.sh
+          DISPLAY_VERSION="$(cat out/version.txt)"
+          echo "DISPLAY_VERSION=$DISPLAY_VERSION" >> "$GITHUB_ENV"
+
+      - name: Verify artifacts
+        run: |
+          set -euxo pipefail
+          BT="$ANDROID_HOME/build-tools/37.0.0"
+          "$BT/apksigner" verify --print-certs out/module/system/system_ext/priv-app/OpenEUICC/OpenEUICC.apk
+          "$BT/aapt2" dump badging out/module/system/system_ext/priv-app/OpenEUICC/OpenEUICC.apk | head -n 5
+          unzip -l out/OpenEUICC-Magisk_module.zip
+          "$BT/aapt2" dump badging out/EasyEUICC-*.apk | head -n 3
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: OpenEUICC-Magisk_module-${{ env.DISPLAY_VERSION }}
+          path: |
+            out/OpenEUICC-Magisk_module.zip
+            out/OpenEUICC-Magisk_module-*.zip
+            out/EasyEUICC-*.apk
+            out/update.json
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish release
+        if: github.event_name == 'push' || inputs.create_release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG="v$DISPLAY_VERSION"
+          NOTES="$(cat <<'EOF'
+          OpenEUICC packaged as a Magisk / KernelSU module, built from the patched upstream sources.
+
+          ### Android 16 launch-crash fix
+          - The privileged application no longer queries `TelephonyManager.uiccCardsInfo` when it is not running as a privileged system app; the previous unguarded call threw `SecurityException: Caller does not have permission.` inside `Application.onCreate` and killed the app on launch.
+          - `uiccCardsInfoCompat` now returns an empty list instead of throwing, so the service and the UI survive an unprivileged start too.
+          - When the app is started without `READ_PRIVILEGED_PHONE_STATE` it shows an explanation instead of crashing.
+          - The module no longer runs `pm install` in `customize.sh`. That created an unprivileged copy in `/data/app` which shadowed the privileged system app and was the root cause of the Android 16 crash.
+          - Version code is pinned explicitly, so the system app is never "updated" by an older data app.
+
+          ### Install
+          1. Flash the zip in Magisk / KernelSU / APatch.
+          2. Reboot.
+          3. Open OpenEUICC.
+
+          If the app still says it is not privileged, your root manager did not mount the module: check that `/system_ext/priv-app/OpenEUICC/OpenEUICC.apk` exists, and if not, change the mount mode (e.g. install mountify) and reboot.
+          EOF
+          )"
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            gh release upload "$TAG" \
+              out/OpenEUICC-Magisk_module.zip \
+              out/OpenEUICC-Magisk_module-*.zip \
+              out/EasyEUICC-*.apk \
+              out/update.json --clobber
+          else
+            gh release create "$TAG" \
+              out/OpenEUICC-Magisk_module.zip \
+              out/OpenEUICC-Magisk_module-*.zip \
+              out/EasyEUICC-*.apk \
+              out/update.json \
+              --title "OpenEUICC $DISPLAY_VERSION" \
+              --notes "$NOTES"
+          fi

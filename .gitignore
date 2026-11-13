@@ -1,0 +1,10 @@
+# Build output
+/out/
+openeuicc/keystore.properties
+openeuicc/local.properties
+
+# Signing material (never commit a private key)
+*.jks
+*.keystore
+*.p12
+*.pk8

@@ -1,0 +1,7 @@
+id=openeuicc
+name=OpenEUICC (Android 16 crash fix)
+version=@VERSION@
+versionCode=@VERSION_CODE@
+author=PeterCxy, hzy132, ban-sky
+description=OpenEUICC provides eSIM support on Android devices without eSIM support. This build fixes the Android 16 launch crash: the app no longer dies when it is not a privileged system app, and the module no longer installs an unprivileged copy that shadows the system app. Upstream source: https://gitea.angry.im/PeterCxy/OpenEUICC . Module source: https://github.com/ban-sky/OpenEUICC_for_Magisk .
+updateJson=https://github.com/ban-sky/OpenEUICC_for_Magisk/releases/latest/download/update.json

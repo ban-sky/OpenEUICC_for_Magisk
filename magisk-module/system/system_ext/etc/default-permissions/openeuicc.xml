@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<exceptions>
+    <!-- Runtime permissions that a privileged system app would otherwise have
+         to be granted by hand. Granting them on first boot makes OpenEUICC
+         usable without opening the system settings first. -->
+    <exception package="im.angry.openeuicc">
+        <permission name="android.permission.READ_PHONE_STATE" fixed="false" />
+        <permission name="android.permission.READ_PHONE_NUMBERS" fixed="false" />
+        <permission name="android.permission.POST_NOTIFICATIONS" fixed="false" />
+    </exception>
+</exceptions>
