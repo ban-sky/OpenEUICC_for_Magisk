@@ -33,8 +33,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      ANDROID_SDK: ${{ runner.temp }}/android-sdk
-      SIGNING_DIR: ${{ runner.temp }}/openeuicc-signing
       KEYSTORE_PASSWORD: openeuicc-module-2026
       KEYSTORE_ALIAS: openeuicc
       INPUT_VERSION_NAME: ${{ inputs.version_name }}
@@ -42,6 +40,11 @@ jobs:
       INPUT_CREATE_RELEASE: ${{ inputs.create_release }}
 
     steps:
+      - name: Set up environment
+        run: |
+          echo "ANDROID_SDK=$RUNNER_TEMP/android-sdk" >> "$GITHUB_ENV"
+          echo "SIGNING_DIR=$RUNNER_TEMP/openeuicc-signing" >> "$GITHUB_ENV"
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -72,7 +75,7 @@ jobs:
       - name: Restore signing keystore
         uses: actions/cache@v4
         with:
-          path: ${{ env.SIGNING_DIR }}
+          path: ${{ runner.temp }}/openeuicc-signing
           key: openeuicc-signing-v1
 
       - name: Install Android SDK
