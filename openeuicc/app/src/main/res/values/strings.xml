@@ -7,13 +7,13 @@
 
     <string name="toast_dsds_switched">DSDS state switched. Please wait until the modem restarts.</string>
 
-    <string name="footer_mep">Multiple Enabled Profiles (MEP) is supported by this slot. To enable or disable this feature, use the \"Slot Mapping\" tool.</string>
+    <string name="footer_mep">Multiple Enabled Profiles (MEP) is supported by this slot. To enable or disable this feature, use the &quot;Slot Mapping&quot; tool.</string>
 
     <string name="slot_mapping">Slot Mapping</string>
     <string name="slot_mapping_logical_slot">Logical slot %d:</string>
     <string name="slot_mapping_port">Slot %1$d Port %2$d</string>
-    <string name="slot_mapping_help">Your phone has %1$d logical and %2$d physical SIM slots.%3$s\n\nSelect which physical slot and/or \"port\" you want each logical slot to correspond to. Note that not all mapping modes may be supported by hardware.</string>
-    <string name="slot_mapping_help_mep">\n\nPhysical slot %1$d supports Multiple Enabled Profiles (MEP). To use this feature, assign its %2$d virtual \"ports\" to different logical slots shown above.\n\nWith MEP enabled, the \"ports\" will behave like separate eSIM slots in OpenEUICC, except with a shared profile list.</string>
+    <string name="slot_mapping_help">Your phone has %1$d logical and %2$d physical SIM slots.%3$s\n\nSelect which physical slot and/or &quot;port&quot; you want each logical slot to correspond to. Note that not all mapping modes may be supported by hardware.</string>
+    <string name="slot_mapping_help_mep">\n\nPhysical slot %1$d supports Multiple Enabled Profiles (MEP). To use this feature, assign its %2$d virtual &quot;ports&quot; to different logical slots shown above.\n\nWith MEP enabled, the &quot;ports&quot; will behave like separate eSIM slots in OpenEUICC, except with a shared profile list.</string>
     <string name="slot_mapping_help_dsds">\nDual SIM mode is supported but disabled. If your device comes with an internal eSIM chip, it might not be enabled by default. Change mapping above or enable dual SIM to access your eSIM.</string>
     <string name="slot_mapping_completed">Your new slot mapping has been set. Please wait until modem refreshes the slots.</string>
     <string name="slot_mapping_failure">The specified mapping might be invalid or unsupported by hardware.</string>
@@ -29,5 +29,5 @@
     <string name="pref_info_website_url" translatable="false">https://openeuicc.com</string>
 
     <string name="not_privileged_title">OpenEUICC is not running as a system app</string>
-    <string name="not_privileged_message">OpenEUICC is running as a normal app instead of a privileged system app, so it cannot access the eUICC.\n\nThis usually means the Magisk / KernelSU module was not mounted. If an older version of this module (or hzy132's module) ever ran `pm install`, a leftover copy in /data/app can also shadow the system app.\n\nHow to fix:\n1. Reboot once. The module now removes a stale /data/app copy automatically on boot.\n2. If that does not help, open Diagnostics (overflow menu) and check the \"File /system/priv-app/...\" lines. If the APK is missing, the module is not mounted: change the mount mode, or install a mount helper such as mountify.\n3. A boot report is written to /data/local/tmp/openeuicc-boot.log.\n\nOpen the app again once it runs as a system app.</string>
+    <string name="not_privileged_message">OpenEUICC is running as a normal app instead of a privileged system app, so it cannot access the eUICC.\n\nThis usually means the Magisk / KernelSU module was not mounted. If an older version of this module (or hzy132’s module) ever ran `pm install`, a leftover copy in /data/app can also shadow the system app.\n\nHow to fix:\n1. Reboot once. The module now removes a stale /data/app copy automatically on boot.\n2. If that does not help, open Diagnostics (overflow menu) and check the &quot;File /system/priv-app/...&quot; lines. If the APK is missing, the module is not mounted: change the mount mode, or install a mount helper such as mountify.\n3. A boot report is written to /data/local/tmp/openeuicc-boot.log.\n\nOpen the app again once it runs as a system app.</string>
 </resources>

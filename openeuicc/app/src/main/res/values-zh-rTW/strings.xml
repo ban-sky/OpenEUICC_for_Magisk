@@ -3,12 +3,12 @@
     <string name="no_euicc_priv">在此裝置上找不到 eSIM 晶片。\n在某些裝置上，您可能需要先在此應用的選單中啟用雙卡支援。</string>
     <string name="dsds">雙卡</string>
     <string name="toast_dsds_switched">雙卡支援狀態已切換。請等待基頻處理器重新啟動。</string>
-    <string name="footer_mep">此卡槽支援啟用多個設定檔 (MEP)。要啟用或停用此功能，請使用\"卡槽映射\"工具。</string>
+    <string name="footer_mep">此卡槽支援啟用多個設定檔 (MEP)。要啟用或停用此功能，請使用&quot;卡槽映射&quot;工具。</string>
     <string name="slot_mapping">卡槽映射</string>
     <string name="slot_mapping_logical_slot">虛擬卡槽 %d:</string>
     <string name="slot_mapping_port">卡槽 %1$d 連接埠 %2$d</string>
-    <string name="slot_mapping_help">您的手機有 %1$d 個虛擬 SIM 卡槽和 %2$d 個實體 SIM 卡槽。%3$s\n\n選擇您希望每個虛擬卡槽對應的實體卡槽 和/或 \"連接埠\"。請注意，並非所有映射模式都受硬體支援。</string>
-    <string name="slot_mapping_help_mep">\n\n實體卡槽 %1$d 支援多個啟用的設定檔 (MEP)。要使用此功能，請將其 %2$d 個虛擬\"連接埠\"分配給上面顯示的不同虛擬卡槽。\n\n啟用 MEP 後，\"連接埠\"會在 OpenEUICC 中顯示為共享 eSIM 設定檔的獨立的 eSIM 卡槽。</string>
+    <string name="slot_mapping_help">您的手機有 %1$d 個虛擬 SIM 卡槽和 %2$d 個實體 SIM 卡槽。%3$s\n\n選擇您希望每個虛擬卡槽對應的實體卡槽 和/或 &quot;連接埠&quot;。請注意，並非所有映射模式都受硬體支援。</string>
+    <string name="slot_mapping_help_mep">\n\n實體卡槽 %1$d 支援多個啟用的設定檔 (MEP)。要使用此功能，請將其 %2$d 個虛擬&quot;連接埠&quot;分配給上面顯示的不同虛擬卡槽。\n\n啟用 MEP 後，&quot;連接埠&quot;會在 OpenEUICC 中顯示為共享 eSIM 設定檔的獨立的 eSIM 卡槽。</string>
     <string name="slot_mapping_help_dsds">\n支援雙卡模式，但已停用。如果您的裝置帶有內建 eSIM 晶片，則預設情況下可能不會啟用。更改上面的映射或啟用雙卡以存取您的 eSIM。</string>
     <string name="slot_mapping_completed">您的新卡槽映射已設定完畢。請等待基頻處理器重新整理卡槽。</string>
     <string name="slot_mapping_failure">指定的映射可能無效或硬體不支援您指定的映射。</string>
@@ -21,5 +21,5 @@
     <string name="pref_advanced_telephony_manager_removable_desc">在預設情況下，可移除 eSIM 將僅使用 OMAPI。這與非特權模式 (EasyEUICC) 一致。在某些裝置上 OMAPI 可能有問題 — 選擇此選項以強制使用 TelephonyManager。</string>
 
     <string name="not_privileged_title">OpenEUICC 未以系統應用身分執行</string>
-    <string name="not_privileged_message">OpenEUICC 目前以一般應用身分執行，而不是特權系統應用，因此無法存取 eUICC。\n\n這通常表示 Magisk / KernelSU 模組沒有被掛載。若之前裝過本模組的舊版本（或 hzy132 的模組），它的 /data/app 副本也會遮蔽系統應用。\n\n解決方式：\n1. 重新開機一次。新版本會在建開機時自動清理殘留的 /data/app 副本。\n2. 若仍無效，開啟「診斷資訊」（右上角選單），查看 \"File /system/priv-app/...\" 兩行。若顯示 missing，表示模組沒有掛載：更換掛載模式，或安裝 mountify 等掛載輔助模組。\n3. 開機日誌在 /data/local/tmp/openeuicc-boot.log。\n\n應用程式以系統應用身分執行後，重新開啟即可。</string>
+    <string name="not_privileged_message">OpenEUICC 目前以一般應用身分執行，而不是特權系統應用，因此無法存取 eUICC。\n\n這通常表示 Magisk / KernelSU 模組沒有被掛載。若之前裝過本模組的舊版本（或 hzy132 的模組），它的 /data/app 副本也會遮蔽系統應用。\n\n解決方式：\n1. 重新開機一次。新版本會在建開機時自動清理殘留的 /data/app 副本。\n2. 若仍無效，開啟「診斷資訊」（右上角選單），查看 &quot;File /system/priv-app/...&quot; 兩行。若顯示 missing，表示模組沒有掛載：更換掛載模式，或安裝 mountify 等掛載輔助模組。\n3. 開機日誌在 /data/local/tmp/openeuicc-boot.log。\n\n應用程式以系統應用身分執行後，重新開啟即可。</string>
 </resources>
