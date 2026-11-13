@@ -147,14 +147,44 @@ jobs:
           export OPENEUICC_VERSION_CODE="${INPUT_VERSION_CODE:-}"
           bash build.sh
           DISPLAY_VERSION="$(cat out/version.txt)"
+          FILE_VERSION="$(cat out/fileversion.txt)"
           echo "DISPLAY_VERSION=$DISPLAY_VERSION" >> "$GITHUB_ENV"
+          echo "FILE_VERSION=$FILE_VERSION" >> "$GITHUB_ENV"
 
       - name: Verify artifacts
         run: |
           set -euxo pipefail
           BT="$ANDROID_HOME/build-tools/37.0.0"
-          "$BT/apksigner" verify --print-certs out/module/system/system_ext/priv-app/OpenEUICC/OpenEUICC.apk
-          "$BT/aapt2" dump badging out/module/system/system_ext/priv-app/OpenEUICC/OpenEUICC.apk | head -n 5
+          APK="$PWD/out/module/system/system_ext/priv-app/OpenEUICC/OpenEUICC.apk"
+
+          "$BT/apksigner" verify --print-certs "$APK"
+          "$BT/apksigner" verify out/EasyEUICC-*.apk
+
+          EXPECTED_CODE="$(sed -n 's/^versionCode=//p' out/module/module.prop)"
+          EXPECTED_VERSION="$(cat out/version.txt)"
+          echo "expected versionCode=$EXPECTED_CODE version=$EXPECTED_VERSION"
+
+          BADGING="$(mktemp)"
+          "$BT/aapt2" dump badging "$APK" > "$BADGING"
+          head -n 5 "$BADGING"
+
+          # The APK that ends up in the module must be the same build that
+          # module.prop advertises, otherwise the system app would look older
+          # than the data app it has to replace.
+          grep -q "package: name='im.angry.openeuicc' versionCode='$EXPECTED_CODE'" "$BADGING" \
+            || { echo "::error::versionCode mismatch inside the packaged APK"; exit 1; }
+          grep -q "^versionCode=$EXPECTED_CODE$" out/module/module.prop \
+            || { echo "::error::module.prop versionCode mismatch"; exit 1; }
+          grep -qF "version=$EXPECTED_VERSION" out/module/module.prop \
+            || { echo "::error::module.prop version mismatch"; exit 1; }
+
+          # The whole point of the patch: never install the privileged APK as a
+          # data app, and never ship the unpacked template.
+          ! grep -vE '^\s*#' magisk-module/customize.sh | grep -q 'pm install' \
+            || { echo "::error::customize.sh must not run pm install"; exit 1; }
+          ! unzip -l out/OpenEUICC-Magisk_module.zip | grep -q 'module.prop.template' \
+            || { echo "::error::module.prop.template leaked into the module"; exit 1; }
+
           unzip -l out/OpenEUICC-Magisk_module.zip
           "$BT/aapt2" dump badging out/EasyEUICC-*.apk | head -n 3
 
@@ -176,7 +206,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          TAG="v$DISPLAY_VERSION"
+          TAG="v$FILE_VERSION"
           NOTES="$(cat <<'EOF'
           OpenEUICC packaged as a Magisk / KernelSU module, built from the patched upstream sources.
 
@@ -208,5 +238,6 @@ jobs:
               out/EasyEUICC-*.apk \
               out/update.json \
               --title "OpenEUICC $DISPLAY_VERSION" \
+              --target "$GITHUB_SHA" \
               --notes "$NOTES"
           fi

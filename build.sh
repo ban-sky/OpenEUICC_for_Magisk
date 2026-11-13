@@ -31,12 +31,16 @@ else
     COMMIT_COUNT="$(git -C "$ROOT" rev-list --count HEAD 2>/dev/null || echo 0)"
     VERSION_CODE=$((802 + COMMIT_COUNT))
 fi
+# Human readable version shown in module.prop / release titles, and the same
+# value with a dot instead of parentheses for file names: GitHub rewrites
+# parentheses in release asset file names, so keep them out of file names.
 DISPLAY_VERSION="$VERSION_NAME($VERSION_CODE)"
+FILE_VERSION="$VERSION_NAME.$VERSION_CODE"
 
 [ -d "$SRC" ] || die "missing vendored upstream source at $SRC"
 [ -f "$SRC/keystore.properties" ] || die "missing $SRC/keystore.properties (signing config)"
 
-echo "==> Building OpenEUICC $DISPLAY_VERSION"
+echo "==> Building OpenEUICC $DISPLAY_VERSION (file version $FILE_VERSION)"
 echo "==> JAVA_HOME=${JAVA_HOME:-<unset>}"
 
 (
@@ -66,19 +70,20 @@ install -m 0644 "$SRC/privapp_whitelist_im.angry.openeuicc.xml" \
 chmod 0755 "$MODULE_OUT/service.sh" "$MODULE_OUT/uninstall.sh"
 rm -f "$MODULE_OUT/module.prop.template"
 
-sed -e "s|@VERSION@|$VERSION_NAME|g" \
+sed -e "s|@VERSION@|$DISPLAY_VERSION|g" \
     -e "s|@VERSION_CODE@|$VERSION_CODE|g" \
     "$MODULE_SRC/module.prop.template" > "$MODULE_OUT/module.prop"
 
-MODULE_ZIP="$OUT/OpenEUICC-Magisk_module-$DISPLAY_VERSION.zip"
+MODULE_ZIP="$OUT/OpenEUICC-Magisk_module-$FILE_VERSION.zip"
 (
     cd "$MODULE_OUT"
     zip -q -r -9 "$MODULE_ZIP" .
 )
 cp "$MODULE_ZIP" "$OUT/OpenEUICC-Magisk_module.zip"
 
-install -m 0644 "$UNPRIV_APK" "$OUT/EasyEUICC-$DISPLAY_VERSION.apk"
+install -m 0644 "$UNPRIV_APK" "$OUT/EasyEUICC-$FILE_VERSION.apk"
 printf '%s\n' "$DISPLAY_VERSION" > "$OUT/version.txt"
+printf '%s\n' "$FILE_VERSION" > "$OUT/fileversion.txt"
 
 cat > "$OUT/update.json" <<EOF
 {
