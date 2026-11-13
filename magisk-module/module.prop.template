@@ -3,5 +3,5 @@ name=OpenEUICC (Android 16 crash fix)
 version=@VERSION@
 versionCode=@VERSION_CODE@
 author=PeterCxy, hzy132, ban-sky
-description=OpenEUICC provides eSIM support on Android devices without eSIM support. This build fixes the Android 16 launch crash and the Android 16/KernelSU mount problem: the app no longer dies when it is not privileged, the APK ships in /system/priv-app (overlaid by every KernelSU mount implementation), and a stale /data/app copy left by older installs is removed at boot. Upstream source: https://gitea.angry.im/PeterCxy/OpenEUICC . Module source: https://github.com/ban-sky/OpenEUICC_for_Magisk .
+description=OpenEUICC provides eSIM support on Android devices without eSIM support. This build fixes the Android 16 launch crash and the Android 16/KernelSU mount problem: the APK ships in both /system/priv-app and /system_ext/priv-app, the app never dies when it is unprivileged, a leftover /data/app copy is removed at boot when the system app is visible, and a normal-app fallback is installed when the module is not mounted so the app is never missing. Upstream source: https://gitea.angry.im/PeterCxy/OpenEUICC . Module source: https://github.com/ban-sky/OpenEUICC_for_Magisk .
 updateJson=https://github.com/ban-sky/OpenEUICC_for_Magisk/releases/latest/download/update.json

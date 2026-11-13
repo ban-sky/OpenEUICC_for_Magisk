@@ -9,9 +9,10 @@ eSIM LPA 实现）打包成 Magisk / KernelSU / APatch 模块，并修复了安�
 固定在提交 `9a537a25163c5159899260fb6191a5da35a692bd`（也就是发布 `3(802)` 时使用的那个提交），
 只做了少量针对性修改。
 
-* **OpenEUICC**（`im.angry.openeuicc`）——特权版，作为系统应用安装在
-  `/system/priv-app/OpenEUICC/`（旧版本放在 `/system_ext`，KernelSU 的部分挂载实现不会覆盖
-  该分区，因此改为 `/system`）。
+* **OpenEUICC**（`im.angry.openeuicc`）——特权版，作为系统应用**同时**安装在
+  `/system/priv-app/OpenEUICC/` 与 `/system_ext/priv-app/OpenEUICC/`。KernelSU 的各种挂载
+  实现覆盖的分区不同，两份都放可以提高成功率；两份同时可见时包管理器以 `/system` 那份为准，
+  另一份会被忽略，不会冲突。
 * **EasyEUICC**（`im.angry.easyeuicc`）——非特权版，普通用户应用，作为独立 APK 附带在 release 里。
 
 ## 闪退的原因
@@ -78,6 +79,17 @@ cat /data/local/tmp/openeuicc-boot.log
 
 文件不存在的话，换一种挂载方式（KernelSU Next 可以试不同的挂载模式，或者刷 `mountify` 模块），
 然后重启。部分机型上"重新刷一遍模块 + 重启两次"也有效。
+
+### 模块没挂载时会怎样
+
+模块绝不会让手机上没有应用：
+
+* 开机时 `post-fs-data.sh` 先把挂载状态写进 `/data/local/tmp/openeuicc-mount.log`；
+* 开机完成后 `service.sh` 做决定：
+  * 系统 APK 可见 → 删掉遗留的 `/data/app` 副本，让特权系统应用生效（必要时 `pm install-existing`）；
+  * 系统 APK 不可见（模块没挂载）→ 自动把同一个 APK 作为普通应用安装，至少能打开并在弹窗里说明
+    原因，而不是「装完模块应用不见了」；
+  * 之后挂载修好，下一次开机会自动把普通应用副本清掉、切回系统应用。
 
 ### KernelSU 注意事项
 

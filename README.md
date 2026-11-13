@@ -11,8 +11,9 @@ and builds the vendored upstream source at commit `9a537a25163c5159899260fb6191a
 (the same commit that release `3(802)` was built from) with a small, focused patch.
 
 * **OpenEUICC** (`im.angry.openeuicc`) — the privileged build, installed as a system app in
-  `/system/priv-app/OpenEUICC/` (older releases used `/system_ext`, which some KernelSU mount
-  implementations do not overlay).
+  **both** `/system/priv-app/OpenEUICC/` and `/system_ext/priv-app/OpenEUICC/`. KernelSU mount
+  implementations differ in which partitions they overlay, and shipping both raises the success
+  rate; when both are visible the package manager keeps the `/system` copy and ignores the other.
 * **EasyEUICC** (`im.angry.easyeuicc`) — the unprivileged build, a normal user app, attached to
   each release as a separate APK.
 
@@ -85,6 +86,19 @@ cat /data/local/tmp/openeuicc-boot.log
 If the file is missing, change the way your root manager mounts modules (for KernelSU Next,
 different mount modes or the `mountify` module are known to help) and reboot. Re-flashing the
 module and rebooting twice also helps on some devices.
+
+### What happens when the module is not mounted
+
+The module never leaves the phone without an app:
+
+* at boot, `post-fs-data.sh` records the mount state in `/data/local/tmp/openeuicc-mount.log`;
+* after boot, `service.sh` decides:
+  * system APK visible → remove a leftover `/data/app` copy so the privileged system app wins
+    (`pm install-existing` if needed);
+  * system APK missing (module not mounted) → install the same APK as a normal app, so the app still
+    opens and explains the problem instead of disappearing;
+  * once the mount is fixed, the next boot removes the ordinary copy and switches back to the system
+    app.
 
 ### KernelSU notes
 
