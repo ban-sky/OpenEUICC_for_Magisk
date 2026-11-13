@@ -55,6 +55,7 @@ process before the first activity appeared.
 | `magisk-module/customize.sh` | No longer runs `pm install` (the source of the unprivileged shadow copy); removes a leftover `/data/app` copy from older versions. |
 | `magisk-module/service.sh` | Grants `READ_PHONE_STATE` / `POST_NOTIFICATIONS` after boot instead of during installation. |
 | `magisk-module/system/system_ext/etc/default-permissions/openeuicc.xml` | Grants the runtime permissions on first boot as a second safety net. |
+| `openeuicc/app-common/src/main/java/im/angry/openeuicc/core/EuiccDiagnostics.kt` and friends | Records cards, ports, permission state and channel-open exceptions, and shows them from the overflow menu and the "no eUICC" screen. |
 | `openeuicc/buildSrc/.../Versioning.kt` + `build.sh` | Pins an explicit, increasing `versionCode` (the vendored tree has no upstream git history, so the derived code would have been far below the previously published `802`). |
 
 The app itself is unchanged otherwise; this is not a rewrite.
@@ -81,6 +82,36 @@ ls -l /system_ext/priv-app/OpenEUICC/OpenEUICC.apk
 If the file is missing, change the way your root manager mounts modules (for KernelSU Next,
 different mount modes or the `mountify` module are known to help) and reboot. Re-flashing the
 module and rebooting twice also helps on some devices.
+
+## "No eUICC detected" / cannot see eSIM information
+
+If the app opens but the main screen says no eUICC was found, use the built-in **diagnostics**
+first:
+
+* overflow menu on the main screen → **Diagnostics**; or
+* the **Show diagnostics** button on the "no eUICC" screen.
+
+The dialog lists every UICC card and port reported by the system (is it an eUICC, is it
+removable, does it support MEP), the state of each relevant permission, and the exact exception
+that prevented a logical channel from being opened. **Copy** puts the whole dump on the
+clipboard so it can be pasted into an issue.
+
+The usual causes fall into three groups:
+
+1. **The module is not mounted** — the dump shows `Installed as system app: false` or
+   `READ_PRIVILEGED_PHONE_STATE: denied`. See the mounting notes above.
+2. **eSIM disabled in system settings** — Android removes a disabled eUICC from
+   `UiccCardsInfo`, so third-party apps cannot see the chip at all. Re-enable it under
+   Settings → Network & internet → SIMs, then reboot (upstream issue #346).
+3. **Slot mapping / baseband limits** — some devices (especially MEP-capable ones) only let the
+   baseband talk to a given physical port and return `NO_SUCH_ELEMENT` when a logical channel is
+   opened. Try enabling **Use TelephonyManager everywhere** in the app's developer options (or in
+   Android's developer options) and reopen the app; the diagnostics dump records these failures.
+
+If the dump contains `SecurityException: The calling package is not allowed to access ISD-R`,
+the platform considers another LPA (for example the vendor's own eUICC service) to be the best
+eUICC service and therefore refuses this app access to ISD-R. Please attach the dump to an issue
+together with the device model and OS build.
 
 ## Build
 

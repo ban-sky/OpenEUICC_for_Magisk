@@ -51,6 +51,7 @@ OpenEUICC 是**特权应用**，它会调用 `TelephonyManager.uiccCardsInfo`，
 | `magisk-module/customize.sh` | 不再执行 `pm install`（它正是非特权"影子副本"的来源）；顺带清掉旧版本留下的 `/data/app` 副本。 |
 | `magisk-module/service.sh` | 开机完成后再授予 `READ_PHONE_STATE` / `POST_NOTIFICATIONS`，而不是在安装阶段。 |
 | `magisk-module/system/system_ext/etc/default-permissions/openeuicc.xml` | 首次开机自动授予运行时权限，作为第二重保险。 |
+| `openeuicc/app-common/.../core/EuiccDiagnostics.kt` 等 | 记录卡/端口/权限/通道打开失败原因，并在主菜单与"未检测到 eUICC"页面提供诊断对话框。 |
 | `openeuicc/buildSrc/.../Versioning.kt` + `build.sh` | 显式指定递增的 `versionCode`（内置源码没有上游 git 历史，算出来的版本号会远小于已发布的 `802`，反而会让系统继续保留旧的 `/data/app` 版本）。 |
 
 除此之外应用本身没有改动，这不是重写。
@@ -74,6 +75,32 @@ ls -l /system_ext/priv-app/OpenEUICC/OpenEUICC.apk
 
 文件不存在的话，换一种挂载方式（KernelSU Next 可以试不同的挂载模式，或者刷 `mountify` 模块），
 然后重启。部分机型上"重新刷一遍模块 + 重启两次"也有效。
+
+## 看不到 eSIM / 无法查看 eSIM 信息
+
+如果模块刷入后应用能打开、但主界面显示"未检测到 eUICC"，请先用应用内的**诊断信息**：
+
+* 主界面右上角菜单 → **诊断信息**；或
+* "未检测到 eUICC" 页面的 **显示诊断信息** 按钮。
+
+对话框里会列出系统报告的每张 UICC 卡、每个端口（是否 eUICC、是否可移除、是否支持 MEP）、
+每个权限的授予状态，以及打开逻辑通道失败的具体异常。点 **复制** 就能把整段内容贴到 issue 里。
+
+根据这些信息，常见原因分三类：
+
+1. **模块没有挂载成功**（诊断里显示"以系统应用安装: false"，或
+   `READ_PRIVILEGED_PHONE_STATE: denied`）：见上一节的挂载排查。
+2. **eSIM 在系统设置里被关闭**：安卓在 eSIM 被停用之后会把它从 `UiccCardsInfo` 里拿掉，
+   第三方应用就完全看不到这张卡。此时进 设置 → 网络和互联网 → SIM 卡 重新启用 eSIM，
+   然后重启手机（上游 issue #346 就是这个现象）。
+3. **槽位映射 / 基带限制**：部分机型（尤其是支持 MEP 的新机）只允许基带访问某个物理端口，
+   打开逻辑通道会返回 `NO_SUCH_ELEMENT`。可以先在 设置 → 开发者选项 里打开
+   **在所有地方使用 TelephonyManager**（应用自己的开发者选项里也有同名开关），再重新打开应用；
+   诊断信息里会如实记录这类失败。
+
+如果诊断信息里出现 `SecurityException: The calling package is not allowed to access ISD-R`，
+说明系统把另一个 LPA（例如厂商自带的 eUICC 服务）当成了"最优 eUICC 服务"，因此拒绝本应用访问
+ISD-R。这种情况请把诊断信息贴到 issue，并说明机型和系统版本。
 
 ## 构建
 

@@ -347,7 +347,7 @@ open class DefaultEuiccChannelManager(
                     "ports=${info.ports.size}"
             )
             info.ports.forEach { port ->
-                val channel = try {
+                val channels = try {
                     tryOpenEuiccChannel(port)
                 } catch (e: Exception) {
                     val message =
@@ -357,7 +357,7 @@ open class DefaultEuiccChannelManager(
                     Log.w(TAG, message, e)
                     null
                 }
-                if (channel == null) {
+                if (channels.isNullOrEmpty()) {
                     EuiccDiagnostics.record(
                         "Slot ${info.physicalSlotIndex} port ${port.portIndex}: " +
                             "no usable channel (not an eUICC, or access denied by the system)"
@@ -365,7 +365,7 @@ open class DefaultEuiccChannelManager(
                 } else {
                     EuiccDiagnostics.record(
                         "Slot ${info.physicalSlotIndex} port ${port.portIndex}: " +
-                            "channel opened (${channel.type}, SE ${channel.seId})"
+                            "channel opened (${channels.joinToString { "${it.type}/SE ${it.seId.id}" }})"
                     )
                     Log.d(
                         TAG,
