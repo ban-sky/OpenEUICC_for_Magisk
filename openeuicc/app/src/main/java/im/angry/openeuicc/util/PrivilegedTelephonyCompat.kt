@@ -30,13 +30,13 @@ class RealUiccCardInfoCompat(val inner: UiccCardInfo) : UiccCardInfoCompat {
                 listOf(RealUiccPortInfoCompat(null, this))
             }
 
-    val isEuicc: Boolean
+    override val isEuicc: Boolean
         get() = inner.isEuicc
 
     override val isRemovable: Boolean
         get() = inner.isRemovable
 
-    val isMultipleEnabledProfilesSupported: Boolean
+    override val isMultipleEnabledProfilesSupported: Boolean
         get() =
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 inner.isMultipleEnabledProfilesSupported

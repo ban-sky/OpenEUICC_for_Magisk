@@ -45,12 +45,22 @@ class PrivilegedEuiccChannelFactory(context: Context) : DefaultEuiccChannelFacto
                     context.preferenceRepository.httpProxyFlow,
                     context.preferenceRepository.es10xMssFlow,
                 )
-            } catch (_: IllegalArgumentException) {
+            } catch (e: IllegalArgumentException) {
                 // Failed
-                Log.w(
-                    DefaultEuiccChannelManager.TAG,
-                    "TelephonyManager APDU interface unavailable for slot ${port.card.physicalSlotIndex} port ${port.portIndex} with ISD-R AID: ${isdrAid.encodeHex()}."
-                )
+                val message =
+                    "TelephonyManager APDU interface unavailable for slot " +
+                        "${port.card.physicalSlotIndex} port ${port.portIndex} with " +
+                        "ISD-R AID ${isdrAid.encodeHex()}: ${e.message}"
+                EuiccDiagnostics.record(message)
+                Log.w(DefaultEuiccChannelManager.TAG, message)
+            } catch (e: Exception) {
+                // e.g. SecurityException when the platform does not consider this app to be the LPA
+                val message =
+                    "TelephonyManager channel rejected for slot " +
+                        "${port.card.physicalSlotIndex} port ${port.portIndex}: " +
+                        "${e.javaClass.simpleName}: ${e.message}"
+                EuiccDiagnostics.record(message)
+                Log.w(DefaultEuiccChannelManager.TAG, message, e)
             }
         }
 

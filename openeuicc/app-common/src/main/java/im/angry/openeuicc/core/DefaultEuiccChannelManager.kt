@@ -330,9 +330,43 @@ open class DefaultEuiccChannelManager(
     }
 
     override fun flowInternalEuiccPorts(): Flow<Pair<Int, Int>> = flow {
-        uiccCards.forEach { info ->
+        val cards = try {
+            uiccCards
+        } catch (e: Exception) {
+            val message = "Cannot enumerate UICC cards: ${e.javaClass.simpleName}: ${e.message}"
+            EuiccDiagnostics.record(message)
+            Log.w(TAG, message, e)
+            emptyList()
+        }
+        EuiccDiagnostics.record("UICC cards reported by the system: ${cards.size}")
+        cards.forEach { info ->
+            EuiccDiagnostics.record(
+                "Card: physical slot ${info.physicalSlotIndex}, " +
+                    "euicc=${info.isEuicc}, removable=${info.isRemovable}, " +
+                    "multipleEnabledProfiles=${info.isMultipleEnabledProfilesSupported}, " +
+                    "ports=${info.ports.size}"
+            )
             info.ports.forEach { port ->
-                tryOpenEuiccChannel(port)?.also {
+                val channel = try {
+                    tryOpenEuiccChannel(port)
+                } catch (e: Exception) {
+                    val message =
+                        "Cannot open channel on slot ${info.physicalSlotIndex} " +
+                            "port ${port.portIndex}: ${e.javaClass.simpleName}: ${e.message}"
+                    EuiccDiagnostics.record(message)
+                    Log.w(TAG, message, e)
+                    null
+                }
+                if (channel == null) {
+                    EuiccDiagnostics.record(
+                        "Slot ${info.physicalSlotIndex} port ${port.portIndex}: " +
+                            "no usable channel (not an eUICC, or access denied by the system)"
+                    )
+                } else {
+                    EuiccDiagnostics.record(
+                        "Slot ${info.physicalSlotIndex} port ${port.portIndex}: " +
+                            "channel opened (${channel.type}, SE ${channel.seId})"
+                    )
                     Log.d(
                         TAG,
                         "Found eUICC on slot ${info.physicalSlotIndex} port ${port.portIndex}"

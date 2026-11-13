@@ -11,4 +11,9 @@
         android:id="@+id/settings"
         android:title="@string/pref_settings"
         app:showAsAction="never" />
+
+    <item
+        android:id="@+id/diagnostics"
+        android:title="@string/no_euicc_diagnostics_title"
+        app:showAsAction="never" />
 </menu>

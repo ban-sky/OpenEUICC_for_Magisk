@@ -250,4 +250,8 @@
     <string name="pref_info_website">Official Website</string>
     <string name="pref_info_source_code">Source Code</string>
     <string name="pref_info_source_code_url" translatable="false">https://gitea.angry.im/PeterCxy/OpenEUICC</string>
+    <string name="no_euicc_show_diagnostics">Show diagnostics</string>
+    <string name="no_euicc_diagnostics_title">Diagnostics</string>
+    <string name="no_euicc_diagnostics_empty">No diagnostic information was recorded.</string>
+    <string name="diagnostics_copy">Copy</string>
 </resources>

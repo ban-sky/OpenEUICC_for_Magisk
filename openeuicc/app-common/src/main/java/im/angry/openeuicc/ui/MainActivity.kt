@@ -28,6 +28,7 @@ import com.google.android.material.tabs.TabLayoutMediator
 import im.angry.openeuicc.common.R
 import im.angry.openeuicc.core.EuiccChannel
 import im.angry.openeuicc.core.EuiccChannelManager
+import im.angry.openeuicc.core.EuiccDiagnostics
 import im.angry.openeuicc.ui.wizard.DownloadWizardActivity
 import im.angry.openeuicc.util.*
 import kotlinx.coroutines.Dispatchers
@@ -140,6 +141,11 @@ open class MainActivity : BaseEuiccAccessActivity(), OpenEuiccContextMarker {
                 true
             }
 
+            R.id.diagnostics -> {
+                showEuiccDiagnosticsDialog()
+                true
+            }
+
             else -> super.onOptionsItemSelected(item)
         }
 
@@ -170,6 +176,7 @@ open class MainActivity : BaseEuiccAccessActivity(), OpenEuiccContextMarker {
 
         val newPages: MutableList<Page> = mutableListOf()
 
+        try {
         euiccChannelManager.flowInternalEuiccPorts().onEach { (slotId, portId) ->
             Log.d(TAG, "slot $slotId port $portId")
 
@@ -201,6 +208,12 @@ open class MainActivity : BaseEuiccAccessActivity(), OpenEuiccContextMarker {
                 }
             }.collect()
         }.collect()
+        } catch (e: Exception) {
+            EuiccDiagnostics.record(
+                "Scanning for eUICC channels failed: ${e.javaClass.simpleName}: ${e.message}"
+            )
+            Log.w(TAG, "Scanning for eUICC channels failed", e)
+        }
 
         // If USB readers exist, add them at the very last
         // We use a wrapper fragment to handle logic specific to USB readers

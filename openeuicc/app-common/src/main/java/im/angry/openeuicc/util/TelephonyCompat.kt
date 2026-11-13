@@ -40,6 +40,10 @@ interface UiccCardInfoCompat {
     val ports: Collection<UiccPortInfoCompat>
     val isRemovable: Boolean
         get() = true // This defaults to removable unless overridden
+    val isEuicc: Boolean
+        get() = true
+    val isMultipleEnabledProfilesSupported: Boolean
+        get() = false
 }
 
 interface UiccPortInfoCompat {

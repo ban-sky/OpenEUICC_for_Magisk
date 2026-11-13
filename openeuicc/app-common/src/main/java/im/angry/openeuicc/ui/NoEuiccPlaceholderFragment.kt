@@ -18,6 +18,9 @@ class NoEuiccPlaceholderFragment : Fragment(), OpenEuiccContextMarker {
         val view = inflater.inflate(R.layout.fragment_no_euicc_placeholder, container, false)
         val textView = view.requireViewById<TextView>(R.id.no_euicc_placeholder)
         textView.text = appContainer.customizableTextProvider.noEuiccExplanation
+        view.requireViewById<View>(R.id.show_diagnostics).setOnClickListener {
+            requireContext().showEuiccDiagnosticsDialog()
+        }
         return view
     }
 }
